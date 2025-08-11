@@ -92,6 +92,23 @@ class ModelLoader:
             
         except Exception as e:
             print(f"❌ Failed to load model: {e}")
+            
+            # Fallback: Try to load simple pickle models (for Docker)
+            print("🔄 Attempting simple pickle model loading...")
+            try:
+                with open("models/model.pkl", 'rb') as f:
+                    self.model = pickle.load(f)
+                
+                # Set default values
+                self.model_name = "iris_simple_model"
+                self.model_version = "1"
+                self.class_names = ["setosa", "versicolor", "virginica"]
+                
+                print("✅ Simple pickle model loaded successfully")
+                return True
+            except Exception as simple_error:
+                print(f"❌ Simple pickle loading also failed: {simple_error}")
+            
             return False
     
     def _load_scaler(self) -> None:
@@ -106,6 +123,14 @@ class ModelLoader:
                 print("⚠️ Scaler not found, predictions may be inaccurate")
         except Exception as e:
             print(f"⚠️ Failed to load scaler: {e}")
+            
+            # Fallback: Try to load simple scaler (for Docker)
+            try:
+                with open("models/scaler.pkl", 'rb') as f:
+                    self.scaler = pickle.load(f)
+                print("✅ Simple scaler loaded successfully")
+            except Exception as scaler_error:
+                print(f"⚠️ Simple scaler loading also failed: {scaler_error}")
     
     def predict(self, features: List[List[float]]) -> Tuple[List[str], List[List[float]]]:
         """

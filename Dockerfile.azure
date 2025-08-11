@@ -36,10 +36,10 @@ ENV PATH=/root/.local/bin:$PATH
 # Copy application code
 COPY src/ ./src/
 COPY data/ ./data/
-COPY mlruns/ ./mlruns/
+COPY models/ ./models/
 
-# Create monitoring directory
-RUN mkdir -p monitoring
+# Create necessary directories
+RUN mkdir -p monitoring mlruns
 
 # Set environment variables for Azure
 ENV PYTHONPATH=/app
