@@ -37,8 +37,7 @@ jobs:
         tags: |
           ${{ secrets.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           ${{ secrets.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+
         platforms: linux/amd64
         
     - name: 🔑 Azure Login
