@@ -27,6 +27,16 @@ mlops_env/
 ENV/
 env/
 .env
+.venv/
+
+# Environment variables and secrets
+.env.local
+.env.production
+.env.staging
+.env.development
+*.env.backup
+secrets.yaml
+config/secrets/
 
 # IDE
 .vscode/
@@ -34,6 +44,7 @@ env/
 *.swp
 *.swo
 *~
+.history/
 
 # OS
 .DS_Store
@@ -47,27 +58,108 @@ Thumbs.db
 # Logs
 *.log
 logs/
+*.log.*
+application.log
+error.log
+access.log
 
 # Database
 *.db
 *.db-journal
 *.sqlite
 *.sqlite3
+predictions.db
+monitoring/predictions.db
 
 # MLflow
 mlruns/
 mlartifacts/
+artifacts/
+mlflow-runs/
+
+# Models (unless specifically tracked)
+models/*.pkl
+models/*.joblib
+models/*.h5
+models/*.pt
+models/*.pth
+!models/.gitkeep
+
+# Data (unless specifically tracked)
+data/*.csv
+data/*.json
+data/*.parquet
+data/raw/
+data/processed/
+!data/.gitkeep
+!data/sample/
 
 # Jupyter
 .ipynb_checkpoints/
+*.ipynb
 
 # Testing
 .pytest_cache/
 .coverage
 htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
 
 # Docker
 .dockerignore
+docker-compose.override.yml
+.docker/
 
 # Monitoring
 monitoring/*.db
+monitoring/logs/
+prometheus/
+grafana/
+
+# Azure specific
+.azure/
+azure-pipelines.yml
+azure-deploy-logs/
+
+# CI/CD artifacts
+.github/workflows/secrets/
+deployment-logs/
+build-artifacts/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+.cache/
+
+# Package managers
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Security
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+ACTUAL_CREDENTIALS.txt
+*credentials*
+*secrets*
+
+# Personal Azure deployment scripts (contain specific resource IDs)
+azure-deploy-*.sh
+setup-github-secrets.sh
+
+# Temporary management files
+FILE_MANAGEMENT_STRATEGY.md
+
+# Local development
+local/
+dev/
+scratch/

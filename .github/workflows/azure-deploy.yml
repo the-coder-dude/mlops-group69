@@ -1,0 +1,117 @@
+name: Deploy MLOps Pipeline to Azure
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: iris-mlops-pipeline
+
+jobs:
+  deploy:
+    name: 🚀 Deploy to Azure
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🔧 Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: 🔑 Log in to Azure Container Registry
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ secrets.CONTAINER_REGISTRY }}
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
+        
+    - name: 🐳 Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.azure
+        push: true
+        tags: |
+          ${{ secrets.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          ${{ secrets.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64
+        
+    - name: 🔑 Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
+    - name: 🚀 Deploy to Azure Web App
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+        images: ${{ secrets.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        
+    - name: ⚙️ Configure App Settings
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          az webapp config appsettings set \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --name ${{ secrets.AZURE_WEBAPP_NAME }} \
+            --settings \
+              AZURE_STORAGE_ACCOUNT="${{ secrets.AZURE_STORAGE_ACCOUNT }}" \
+              AZURE_STORAGE_KEY="${{ secrets.AZURE_STORAGE_KEY }}" \
+              APPINSIGHTS_INSTRUMENTATION_KEY="${{ secrets.APPINSIGHTS_INSTRUMENTATION_KEY }}" \
+              WEBSITES_PORT="8000" \
+              ENVIRONMENT="production" \
+              COMMIT_SHA="${{ github.sha }}" \
+              BUILD_NUMBER="${{ github.run_number }}"
+              
+    - name: 🔄 Restart Web App
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          az webapp restart \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --name ${{ secrets.AZURE_WEBAPP_NAME }}
+            
+    - name: ⏳ Wait for deployment
+      run: sleep 60
+      
+    - name: 🏥 Health Check
+      run: |
+        echo "Performing health check..."
+        max_attempts=10
+        attempt=1
+        
+        while [ $attempt -le $max_attempts ]; do
+          echo "Health check attempt $attempt of $max_attempts"
+          
+          # Construct URL from secrets
+          app_name="${{ secrets.AZURE_WEBAPP_NAME }}"
+          health_url="https://${app_name}.azurewebsites.net/health"
+          
+          if curl -f --max-time 30 "$health_url"; then
+            echo "✅ Health check passed!"
+            break
+          else
+            echo "❌ Health check failed, retrying in 30 seconds..."
+            if [ $attempt -eq $max_attempts ]; then
+              echo "🚨 Health check failed after $max_attempts attempts"
+              exit 1
+            fi
+            sleep 30
+            attempt=$((attempt + 1))
+          fi
+        done
+        
+    - name: 📊 Deployment Summary
+      run: |
+        echo "=== DEPLOYMENT SUMMARY ==="
+        echo "Environment: production"
+        echo "Image: ${{ secrets.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+        echo "Web App: ${{ secrets.AZURE_WEBAPP_NAME }}"
+        echo "Commit: ${{ github.sha }}"
+        echo "Build: ${{ github.run_number }}"
+        echo "✅ Deployment completed successfully!"
