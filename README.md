@@ -90,3 +90,4 @@ docker run -p 8000:8000 iris-mlops-pipeline
 ## 📝 API Documentation
 
 Once running, visit: http://localhost:8000/docs
+# GitHub Secrets configured successfully
